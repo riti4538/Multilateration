@@ -8,3 +8,5 @@ Code implementing a constructive algorithm for a bound on the metric dimension o
 [1] Hauptmann, M., Schmied, R., and Viehmann, C. Approximation complexity of metric dimension problem, Journal of Discrete Algorithms 14(2012), 214-222. (https://www.sciencedirect.com/science/article/pii/S1570866711001134)
 
 [2] Tillquist, R. C., and Lladser, M. E. Low-dimensional representation of genomic sequences. Journal of Mathematical Biology (Mar 2019). (https://link.springer.com/article/10.1007/s00285-019-01348-1)
+
+This implementation was written under funding by NSF IIS grant 1836914.
