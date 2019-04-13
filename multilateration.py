@@ -168,17 +168,35 @@ def hammingConstruction(resSet, alphabet, rand=False):
 #input: k - the length of strings in the hamming graph
 #       alphabet - the alphabet to use in the hamming graph
 #       size - the size of sets to check
-#       verbose - optional bool. if true, print percent of sets checked every 10000 sets, default is false
+#       procs - the number of processes to use, default is 1
+#       verbose - optional bool. if true and procs=1, print percent of sets checked every 10000 sets, default is false
 #return: all resolving sets of the given size for the specified hamming graph
-def hammingAllResolving(k, alphabet, size, verbose=False):
+def hammingAllResolving(k, alphabet, size, procs=1, verbose=False):
   if isinstance(alphabet, str): alphabet = list(alphabet)
   resSets = []
   kmers = product(alphabet, repeat=k)
-  numCombos = comb(int(np.power(len(alphabet), k)), size)
-  for i,R in enumerate(combinations(kmers, size)):
-    if verbose and i%10000==0: print('Brute force progress: ', i / numCombos)
-    if checkResolvingHamming(R, k, alphabet, verbose=verbose): resSets.append(R)
+  if procs>1:
+    pool = mp.Pool(processes=procs)
+    results = pool.map_async(checkResolvingHammingTuple, combinations(kmers, size))
+    results = results.get()
+    pool.close()
+    pool.join()
+  else:
+    numCombos = comb(int(np.power(len(alphabet), k)), size)
+    for i,R in enumerate(combinations(kmers, size)):
+      if verbose and i%10000==0: print('Brute force progress: ', i / numCombos)
+      if checkResolvingHamming(R, k, alphabet, verbose=verbose): resSets.append(R)
   return resSets
+
+#A helper function accepting a tuple of arguments for checkResolvingHamming
+#This allows pool.map_async to be used for multiprocessing
+#input: a tuple containing 3 elements
+#       R - a set of strings to check as resolving
+#       k - length of strings
+#       alphabet - characters that strings are composed of
+#return: immediately calls checkResolvingHamming and returns the result
+def checkResolvingHammingTuple((R, k, alphabet)):
+  return checkResolvingHamming(R, k, alphabet)
 
 #Check that a given set of strings is resolving for a specified Hamming graph
 #This may be extremely slow even for small values of k and alphabet
