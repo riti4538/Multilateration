@@ -181,6 +181,8 @@ def hammingAllResolving(k, alphabet, size, procs=1, verbose=False):
     results = results.get()
     pool.close()
     pool.join()
+    for (isResolving, R) in results:
+      if isResolving: resSets.append(R)
   else:
     numCombos = comb(int(np.power(len(alphabet), k)), size)
     for i,R in enumerate(combinations(kmers, size)):
@@ -194,9 +196,9 @@ def hammingAllResolving(k, alphabet, size, procs=1, verbose=False):
 #       R - a set of strings to check as resolving
 #       k - length of strings
 #       alphabet - characters that strings are composed of
-#return: immediately calls checkResolvingHamming and returns the result
+#return: immediately calls checkResolvingHamming and returns the result in addition to the given set R
 def checkResolvingHammingTuple((R, k, alphabet)):
-  return checkResolvingHamming(R, k, alphabet)
+  return (checkResolvingHamming(R, k, alphabet), R)
 
 #Check that a given set of strings is resolving for a specified Hamming graph
 #This may be extremely slow even for small values of k and alphabet
