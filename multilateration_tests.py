@@ -58,7 +58,22 @@ if __name__=='__main__':
         print(k, size, len(L))
         #for l in L: print('   ', l)
 
-  if True: #test hamming construction
+    k = 2
+    alphabet = map(str, range(4))
+    size = 4
+    R = hammingAllResolving(k, alphabet, size, procs=3, verbose=False)
+    S = hammingAllResolving(k, alphabet, size, procs=1, verbose=False)
+    print(len(R)==len(S))
+    for r in R:
+      if r not in S:
+        print('FAIL: element of R not in S')
+        exit(0)
+    for s in S:
+      if s not in R:
+        print('FAIL: element of S not in R')
+        exit(0)
+        
+  if True: #test hamming construction and checkAllResolvingHamming
     print('TEST HAMMING CONSTRUCTION')
     alphabet = '01'
     R = []
@@ -86,6 +101,24 @@ if __name__=='__main__':
         print('construction failed', R, k, alphabet)
         exit(0)
       else: print('Success', R, k, alphabet)
+
+    k = 3
+    alphabet = map(str, range(4))
+    R = ['300','133','000','110','302','131'] #resolving on H_3,4
+    if not checkResolvingHamming(R, k, alphabet, procs=3, chunkSize=1000, verbose=False):
+      print('FAIL: check resolving with multiple processes, should be resolving')
+      exit(0)
+    if not checkResolvingHamming(R, k, alphabet, procs=1, chunkSize=1000, verbose=False):
+      print('FAIL: check resolving with single process, should be resolving')
+      exit(0)
+      
+    R = ['000', '111', '222', '333', '123', '321'] #not resolving on H_3,4
+    if checkResolvingHamming(R, k, alphabet, procs=3, chunkSize=1000, verbose=False):
+      print('FAIL: check resolving with multiple processes, should not be resolving')
+      exit(0)
+    if checkResolvingHamming(R, k, alphabet, procs=1, chunkSize=1000, verbose=False):
+      print('FAIL: check resolving with single processes, should not be resolving')
+      exit(0)
 
   n = 200
   repeats = 50
@@ -297,7 +330,7 @@ if __name__=='__main__':
       if GR!=MR or MR!=DR:
         print('Fail', useDist, GR, MR, DR)
         exit(0)
-
+        
   print('DONE')
 
 
