@@ -8,7 +8,7 @@ import numpy as np
 import networkx as nx
 from scipy.stats import entropy
 from scipy.misc import comb
-from itertools import product, combinations
+from itertools import product, combinations, izip, islice, repeat
 import multiprocessing as mp
 import pickle
 
@@ -177,7 +177,7 @@ def hammingAllResolving(k, alphabet, size, procs=1, verbose=False):
   kmers = product(alphabet, repeat=k)
   if procs>1:
     pool = mp.Pool(processes=procs)
-    results = pool.map_async(checkResolvingHammingTuple, combinations(kmers, size))
+    results = pool.map_async(checkResolvingHammingTuple, izip(combinations(kmers, size), repeat(k), repeat(alphabet)))
     results = results.get()
     pool.close()
     pool.join()
@@ -205,18 +205,46 @@ def checkResolvingHammingTuple((R, k, alphabet)):
 #input: R - a set of strings to check as resolving
 #       k - length of strings
 #       alphabet - characters that strings are composed of
-#       verbose - optional bool. if true, print percent of strings checked every 10000 sets, default is false
+#       procs - optional number of processes to use, default is 1
+#       chunkSize - optional number of strings to check at once if procs>1, default is 1000
+#       verbose - optional bool. if true, print percent of strings checked every 10000 sets or every chunkSize if procs>1, default is false
 #return: true if R is resolving on H(k, |alphabet|) and false otherwise
-def checkResolvingHamming(R, k, alphabet, verbose=False):
+def checkResolvingHamming(R, k, alphabet, procs=1, chunkSize=1000, verbose=False):
   if isinstance(alphabet, str): alphabet = list(alphabet)
   tags = {}
-  tot = float(np.power(len(alphabet), k))
-  for i,seq in enumerate(product(alphabet, repeat=k)):
-    if verbose and i%10000==0: print('Check resolving Hamming progress: ', i/tot)
-    tag = ';'.join(map(str, [hammingDist(list(seq), r) for r in R]))
-    if tag in tags: return False
-    tags[tag] = 1
+  if procs>1:
+    kmers = izip(product(alphabet, repeat=k), repeat(R))
+    chunk = list(islice(kmers, 0, chunkSize))
+    chunkNum = 0
+    while len(chunk)>0:
+      if verbose:
+        print('Check resolving Hamming progress: chunk', chunkNum)
+        chunkNum += 1
+      pool = mp.Pool(processes=procs)
+      results = pool.map_async(genTag, chunk)
+      results = results.get()
+      pool.close()
+      pool.join()
+      for tag in results:
+        if tag in tags: return False
+        tags[tag] = 1
+      chunk = list(islice(kmers, 0, chunkSize))
+  else:
+    tot = float(np.power(len(alphabet), k))
+    for i,seq in enumerate(product(alphabet, repeat=k)):
+      if verbose and i%10000==0: print('Check resolving Hamming progress: ', i/tot)
+      tag = ';'.join(map(str, [hammingDist(list(seq), r) for r in R]))
+      if tag in tags: return False
+      tags[tag] = 1
   return True
+
+#Argument is given as a tuple to allow use by map_async
+#input: a tuple containing seq and R
+#       seq - a sequence of interest
+#       R - a set of sequences to determine the distance from to kmer
+#return: a string containing the Hamming distances from seq to all elements of R separated by ;
+def genTag((seq, R)):
+  return ';'.join(map(str, [hammingDist(list(seq), r) for r in R]))
 
 ###########################
 ### CHECK RESOLVABILITY ###
